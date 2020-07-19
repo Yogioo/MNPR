@@ -44,6 +44,15 @@
         [HideInInspector] _SrcBlend ("__src", Float) = 1.0
         [HideInInspector] _DstBlend ("__dst", Float) = 0.0
         [HideInInspector] _ZWrite ("__zw", Float) = 1.0
+
+
+        _ShadowColor("Shadow Color",Color) = (.3,.1,.1)
+        _ReceiveShadowColor("Receive Shadow Color",Color) = (.1,.1,.3)
+        _ShadowStrength("Shadow Strength",Range(0,6)) = 4.5
+        _ShadowFade("Shadow Fade",Range(0,5))= .1
+        _MiddleLineStrength("Middle Line Strength",float) = 3
+        _MiddleLineColor("Middle Line Strength",Color) = (1,0,1)
+        _MiddleLineWidth("Middle Line Strength",Range(0,1)) = 0.7
     }
 
     CGINCLUDE
@@ -90,7 +99,7 @@
 
             #pragma vertex vertBase
             #pragma fragment fragBase
-            #include "UnityStandardCoreForward.cginc"
+            #include "NPRStandCore.cginc"
 
             ENDCG
         }
@@ -127,7 +136,7 @@
 
             #pragma vertex vertAdd
             #pragma fragment fragAdd
-            #include "UnityStandardCoreForward.cginc"
+            #include "NPRStandCore.cginc"
 
             ENDCG
         }
@@ -193,7 +202,7 @@
             #pragma vertex vertDeferred
             #pragma fragment fragDeferred
 
-            #include "UnityStandardCore.cginc"
+            #include "NPRStandCore.cginc"
 
             ENDCG
         }
@@ -258,7 +267,7 @@
 
             #pragma vertex vertBase
             #pragma fragment fragBase
-            #include "UnityStandardCoreForward.cginc"
+            #include "NPRStandCore.cginc"
 
             ENDCG
         }
@@ -290,7 +299,7 @@
 
             #pragma vertex vertAdd
             #pragma fragment fragAdd
-            #include "UnityStandardCoreForward.cginc"
+            #include "NPRStandCore.cginc"
 
             ENDCG
         }
@@ -347,3 +356,4 @@
     FallBack "VertexLit"
 	CustomEditor "MNPR.MNPREditor.NPRStandardShaderGUI"
 }
+
