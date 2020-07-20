@@ -1,4 +1,4 @@
-# MNPR
+# MNPR(Masaka Non-Photorealistic Rendering)
 
 [toc]
 
@@ -16,4 +16,4 @@ Unity 2017.4.40c1
 
 ## 注:
 
-其中包含ShaderlabVSCode插件+异度之刃角色模型, 请勿用于商业用途, 仅供学习, 其他资源开源
+请勿用于商业用途, 仅供学习
