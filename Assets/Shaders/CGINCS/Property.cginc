@@ -1,5 +1,5 @@
 #ifndef PROPERTY_DEF
-#define PROPERTY_DEF
+    #define PROPERTY_DEF
 
     #include "AutoLight.cginc"
 
@@ -68,7 +68,7 @@
     };
 
 
-        // ------------------------------------------------------------------
+    // ------------------------------------------------------------------
     //  Deferred pass
 
     struct VertexOutputDeferred
@@ -86,6 +86,7 @@
         UNITY_VERTEX_OUTPUT_STEREO
     };
 
-    float3 _ShadowColor,_ReceiveShadowColor,_MiddleLineColor;
-    float _ShadowStrength,_ShadowFade,_MiddleLineStrength,_MiddleLineWidth;
+    float3 _ShadowColor,_ReceiveShadowColor,_MiddleLineColor,_FresnelColor;
+    float _ShadowStrength,_MiddleLineStrength;
+    float _FresnelStrength;
 #endif

@@ -427,48 +427,54 @@
         #   else
         surfaceReduction = 1.0 / (roughness*roughness + 1.0);           // fade \in [0.5;1]
         #   endif
-
         // To provide true Lambert lighting, we need to be able to kill specular completely.
         specularTerm *= any(specColor) ? 1.0 : 0.0;
 
         half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
-//return _LightColor0.rgbr * diffuseTerm ;
+        //return _LightColor0.rgbr * diffuseTerm ;
         // NPR Main
         // 1. 对Diffuse进行处理 控制暗面大小,颜色
         // 控制暗部的色彩渐变范围
         // 对漫反射光照值的暗部进行一个渐变处理, 否则是没有渐变  然后对暗部进行向暗部扩张行为
-        float oneMinusdiffuseTerm = step(1,1-diffuseTerm); // 取得暗部
+        float oneMinusdiffuseTerm = 1-diffuseTerm; // 取得暗部
+        float shadowTerm =  smoothstep(_ShadowStrength,1,oneMinusdiffuseTerm).rrrr;
+        diffuseTerm = 1-shadowTerm;
         //oneMinusdiffuseTerm = step(1,1-diffuseTerm); // 对暗部进行二值化
-        oneMinusdiffuseTerm *= noneNormalizeNL; // 对暗部进行渐变
-        oneMinusdiffuseTerm += diffuseTerm;
-        _ShadowStrength-=5; // 方便材质面板调试 从最低-5 到0
-        _ShadowFade-=0.499999; // 同上
-        diffuseTerm = smoothstep(_ShadowStrength,_ShadowFade,oneMinusdiffuseTerm); // 跳转暗部范围
+        // oneMinusdiffuseTerm *= noneNormalizeNL; // 对暗部进行渐变
+        // oneMinusdiffuseTerm += diffuseTerm;
+        // _ShadowStrength-=5; // 方便材质面板调试 从最低-5 到0
+        // _ShadowFade-=0.499999; // 同上
+        // diffuseTerm = smoothstep(_ShadowStrength,_ShadowFade,oneMinusdiffuseTerm); // 跳转暗部范围
 
         // 包含接受的投影色
         float reciveShadowTerm = 1-step(.1,light.color.r+light.color.g+light.color.b);
         float3 reciveShadowColor = nl*reciveShadowTerm * _ReceiveShadowColor +1- nl*reciveShadowTerm;
         // 取得漫反射暗面
-        float shadowTerm = 1- diffuseTerm;
+        //float shadowTerm = 1- diffuseTerm;
         float3 shadowColor = shadowTerm * _ShadowColor + 1-shadowTerm;
         
-        // 2. 明暗交界线加深 叠加在亮面上面  4.8 0.7  _MiddleLineWidth
-        float width = smoothstep(0,1,diffuseTerm) ; // 跳转暗部范围
-        float width2 = smoothstep(_MiddleLineWidth,1,diffuseTerm);
-        float widthLine = saturate(( width - width2) *  _MiddleLineStrength); // 明暗交接线
-        float3 lineTTT = widthLine * _MiddleLineColor + 1 - widthLine ;
+        // 2. 明暗交界线加深 叠加在亮面上面 
+        float midLine =  1-abs(noneNormalizeNL) * _MiddleLineStrength;//smoothstep(1-_MiddleLineStrength,1,diffuseTerm* nl) ;
         
+        float3 midColor = _MiddleLineColor * midLine + (1-midLine) ;
 
-         // 固有色 *(全局光照 + 灯光色 * 漫反射 + 阴影 + 投影)  问题: 灯光色中不应该包含了阴影
-        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb  * shadowColor * reciveShadowColor * lineTTT) // 漫反射  根据全局光照 灯光颜色 模型贴图 决定色彩,参数为迪士尼brdf经验模型
+
+        // 菲涅尔
+        float3 fresnel = pow(1-nv,_FresnelStrength) * _FresnelColor;
+
+
+        // 固有色 *(全局光照 + 灯光色 * 漫反射 + 阴影 + 投影)  问题: 灯光色中不应该包含了阴影
+        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb * min(shadowColor,midColor) * reciveShadowColor ) // 漫反射  根据全局光照 灯光颜色 模型贴图 决定色彩,参数为迪士尼brdf经验模型
         + specularTerm * light.color * FresnelTerm (specColor, lh) // 反射 根据金属度与光滑度决定反射效果, 反射色为灯光颜色
         + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv) // 反射天空采样 色彩根据天空球(probe) 反射颜色(金属反射本身)  ,参数根据粗糙程度
+        + fresnel
         //+ oneMinusDiffuseTerm * shadowCol // 阴影色
         ; 
         
         
         //color = gi.diffuse + _LightColor0.rgb  * shadowColor * reciveShadowColor + lineTTT;
-        //color =  (width - width2);
+        // color =  diffuseTerm;
+        //color = midColor;
         return half4(color, 1);
     }
     

@@ -1,6 +1,6 @@
 ﻿Shader "Masaka/NPRStandard"
 {
-	Properties
+    Properties
     {
         _Color("Color", Color) = (1,1,1,1)
         _MainTex("Albedo", 2D) = "white" {}
@@ -46,17 +46,18 @@
         [HideInInspector] _ZWrite ("__zw", Float) = 1.0
 
 
-        _ShadowColor("Shadow Color",Color) = (.3,.1,.1)
-        _ReceiveShadowColor("Receive Shadow Color",Color) = (.1,.1,.3)
-        _ShadowStrength("Shadow Strength",Range(0,6)) = 4.5
-        _ShadowFade("Shadow Fade",Range(0,5))= .1
-        _MiddleLineStrength("Middle Line Strength",float) = 3
-        _MiddleLineColor("Middle Line Strength",Color) = (1,0,1)
-        _MiddleLineWidth("Middle Line Strength",Range(0,1)) = 0.7
+        _ShadowColor("Shadow Color",Color) = (0.3,0.4,0.3)
+        _ReceiveShadowColor("Receive Shadow Color",Color) = (.2,.1,.3)
+        _MiddleLineColor("Middle Line Strength",Color) = (0,0,0)
+        _FresnelColor("Fresnel Color",Color) = (0.3,0.4,0.3)
+
+        _ShadowStrength("Shadow Strength",Range(0,.999)) =0.3
+        _MiddleLineStrength("Middle Line Strength",Range(0,10)) =2
+        _FresnelStrength("_FresnelStrength",Range(1,10)) = 10
     }
 
     CGINCLUDE
-        #define UNITY_SETUP_BRDF_INPUT MetallicSetup
+    #define UNITY_SETUP_BRDF_INPUT MetallicSetup
     ENDCG
 
     SubShader
@@ -354,6 +355,6 @@
 
 
     FallBack "VertexLit"
-	CustomEditor "MNPR.MNPREditor.NPRStandardShaderGUI"
+    CustomEditor "MNPR.MNPREditor.NPRStandardShaderGUI"
 }
 
