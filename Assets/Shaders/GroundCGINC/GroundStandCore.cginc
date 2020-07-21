@@ -1,19 +1,18 @@
 
 #include "UnityStandardConfig.cginc"
 
-#ifndef NPR_STANDARD_CORE_INCLUDED
-    #define NPR_STANDARD_CORE_INCLUDED
+#ifndef Ground_STANDARD_CORE_INCLUDED
+    #define Ground_STANDARD_CORE_INCLUDED
 
     #include "UnityCG.cginc"
     #include "UnityShaderVariables.cginc"
     #include "UnityInstancing.cginc"
     #include "UnityStandardConfig.cginc"
     #include "UnityStandardInput.cginc"
-    //#include "NPRPBSLighting.cginc"
     #include "UnityStandardUtils.cginc"
     #include "UnityGBuffer.cginc"
     #include "UnityStandardBRDF.cginc"
-    #include "Property.cginc"
+    #include "GroundProperty.cginc"
 
     #include "AutoLight.cginc"
     //-------------------------------------------------------------------------------------
@@ -355,19 +354,13 @@
     // * Smith for Visiblity term
     // * Schlick approximation for Fresnel
     //#endregion
-    half4 NPR_BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
+    half4 Ground_BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     float3 normal, float3 viewDir,
     UnityLight light, UnityIndirect gi)
     {
         float perceptualRoughness = SmoothnessToPerceptualRoughness (smoothness);
         float3 halfDir = Unity_SafeNormalize (float3(light.dir) + viewDir);
 
-        // NdotV should not be negative for visible pixels, but it can happen due to perspective projection and normal mapping
-        // In this case normal should be modified to become valid (i.e facing camera) and not cause weird artifacts.
-        // but this operation adds few ALU and users may not want it. Alternative is to simply take the abs of NdotV (less correct but works too).
-        // Following define allow to control this. Set it to 0 if ALU is critical on your platform.
-        // This correction is interesting for GGX with SmithJoint visibility function because artifacts are more visible in this case due to highlight edge of rough surface
-        // Edit: Disable this code by default for now as it is not compatible with two sided lighting used in SpeedTree.
         #define UNITY_HANDLE_CORRECTLY_NEGATIVE_NDOTV 0
 
         #if UNITY_HANDLE_CORRECTLY_NEGATIVE_NDOTV
@@ -382,8 +375,7 @@
             half nv = abs(dot(normal, viewDir));    // This abs allow to limit artifact
         #endif
 
-        float noneNormalizeNL = dot(normal, light.dir);
-        float nl = saturate(noneNormalizeNL);
+        float nl = saturate(dot(normal, light.dir));
         float nh = saturate(dot(normal, halfDir));
 
         half lv = saturate(dot(light.dir, viewDir));
@@ -392,6 +384,7 @@
         // Diffuse term
         half diffuseTerm = DisneyDiffuse(nv, nl, lh, perceptualRoughness) * nl;
 
+        //#region Specular
         // Specular term
         // HACK: theoretically we should divide diffuseTerm by Pi and not multiply specularTerm!
         // BUT 1) that will make shader look significantly darker than Legacy ones
@@ -427,54 +420,20 @@
         #   else
         surfaceReduction = 1.0 / (roughness*roughness + 1.0);           // fade \in [0.5;1]
         #   endif
+
         // To provide true Lambert lighting, we need to be able to kill specular completely.
         specularTerm *= any(specColor) ? 1.0 : 0.0;
-
-        half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
-        //return _LightColor0.rgbr * diffuseTerm ;
-        // NPR Main
-        // 1. 对Diffuse进行处理 控制暗面大小,颜色
-        // 控制暗部的色彩渐变范围
-        // 对漫反射光照值的暗部进行一个渐变处理, 否则是没有渐变  然后对暗部进行向暗部扩张行为
-        float oneMinusdiffuseTerm = 1-diffuseTerm; // 取得暗部
-        float shadowTerm =  smoothstep(_ShadowStrength,1,oneMinusdiffuseTerm).rrrr;
-        diffuseTerm = 1-shadowTerm;
-        //oneMinusdiffuseTerm = step(1,1-diffuseTerm); // 对暗部进行二值化
-        // oneMinusdiffuseTerm *= noneNormalizeNL; // 对暗部进行渐变
-        // oneMinusdiffuseTerm += diffuseTerm;
-        // _ShadowStrength-=5; // 方便材质面板调试 从最低-5 到0
-        // _ShadowFade-=0.499999; // 同上
-        // diffuseTerm = smoothstep(_ShadowStrength,_ShadowFade,oneMinusdiffuseTerm); // 跳转暗部范围
+        //#endregion
 
         // 包含接受的投影色
         float reciveShadowTerm = nl*(1-light.color);
         float3 reciveShadowColor = reciveShadowTerm * _ReceiveShadowColor +1- reciveShadowTerm;
-        // 取得漫反射暗面
-        //float shadowTerm = 1- diffuseTerm;
-        float3 shadowColor = shadowTerm * _ShadowColor + 1-shadowTerm;
-        
-        // 2. 明暗交界线加深 叠加在亮面上面 
-        float midLine =  1-abs(noneNormalizeNL) * _MiddleLineStrength;
-        
-        float3 midColor = _MiddleLineColor * midLine + (1-midLine) ;
 
+        half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
+        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb * reciveShadowColor* diffuseTerm) //草地不需要漫反射,通过贴图绘制
+        + specularTerm * light.color * FresnelTerm (specColor, lh)
+        + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
 
-        // 菲涅尔
-        float3 fresnel = pow(1-nv,_FresnelStrength) * _FresnelColor;
-
-
-        // 固有色 *(全局光照 + 灯光色 * 漫反射 + 阴影 + 投影)  问题: 灯光色中不应该包含了阴影
-        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb * min(shadowColor,midColor) * reciveShadowColor ) // 漫反射  根据全局光照 灯光颜色 模型贴图 决定色彩,参数为迪士尼brdf经验模型
-        + specularTerm * light.color * FresnelTerm (specColor, lh) // 反射 根据金属度与光滑度决定反射效果, 反射色为灯光颜色
-        + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv) // 反射天空采样 色彩根据天空球(probe) 反射颜色(金属反射本身)  ,参数根据粗糙程度
-        + fresnel
-        //+ oneMinusDiffuseTerm * shadowCol // 阴影色
-        ; 
-        
-        
-        //color = gi.diffuse + _LightColor0.rgb  * shadowColor * reciveShadowColor + lineTTT;
-        // color =  diffuseTerm;
-        //color = midColor;
         return half4(color, 1);
     }
     
@@ -535,21 +494,26 @@
 
     half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     {
+        // 
         UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
-
+        // 初始化Fragment属性 : Diff Spec Mat Routh worldNormal viewDir tangent refl
         FRAGMENT_SETUP(s)
 
-        UNITY_SETUP_INSTANCE_ID(i);
-        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+        UNITY_SETUP_INSTANCE_ID(i); // GPU Instance
+        UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i); 
 
+        // Dir Light
         UnityLight mainLight = MainLight ();
         UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld);
-
+        // OCC
         half occlusion = Occlusion(i.tex.xy);
+        // Ambinet + Globle
         UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
-
-        half4 c = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
+        // BRDF
+        half4 c = Ground_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
+        // Emission
         c.rgb += Emission(i.tex.xy);
+        //c.rgb = s.specColor;
         
 
         UNITY_APPLY_FOG(i.fogCoord, c.rgb);
@@ -626,7 +590,7 @@
         UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);
         UnityIndirect noIndirect = ZeroIndirect ();
 
-        half4 c = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, light, noIndirect);
+        half4 c = Ground_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, light, noIndirect);
 
         UNITY_APPLY_FOG_COLOR(i.fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass
         return OutputForward (c, s.alpha);
@@ -743,7 +707,7 @@
 
         UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, dummyLight, sampleReflectionsInDeferred);
 
-        half3 emissiveColor = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect).rgb;
+        half3 emissiveColor = Ground_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect).rgb;
 
         #ifdef _EMISSION
             emissiveColor += Emission (i.tex.xy);

@@ -1,19 +1,18 @@
 
 #include "UnityStandardConfig.cginc"
 
-#ifndef NPR_STANDARD_CORE_INCLUDED
-    #define NPR_STANDARD_CORE_INCLUDED
+#ifndef GRASS_STANDARD_CORE
+    #define GRASS_STANDARD_CORE
 
     #include "UnityCG.cginc"
     #include "UnityShaderVariables.cginc"
     #include "UnityInstancing.cginc"
     #include "UnityStandardConfig.cginc"
     #include "UnityStandardInput.cginc"
-    //#include "NPRPBSLighting.cginc"
     #include "UnityStandardUtils.cginc"
     #include "UnityGBuffer.cginc"
     #include "UnityStandardBRDF.cginc"
-    #include "Property.cginc"
+    #include "GrassProperty.cginc"
 
     #include "AutoLight.cginc"
     //-------------------------------------------------------------------------------------
@@ -343,19 +342,7 @@
     // a few precious ALU slots.
 
 
-    // Main Physically Based BRDF
-    // Derived from Disney work and based on Torrance-Sparrow micro-facet model
-    //
-    //   BRDF = kD / pi + kS * (D * V * F) / 4
-    //   I = BRDF * NdotL
-    //
-    // * NDF (depending on UNITY_BRDF_GGX):
-    //  a) Normalized BlinnPhong
-    //  b) GGX
-    // * Smith for Visiblity term
-    // * Schlick approximation for Fresnel
-    //#endregion
-    half4 NPR_BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
+    half4 Grass_BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     float3 normal, float3 viewDir,
     UnityLight light, UnityIndirect gi)
     {
@@ -382,15 +369,14 @@
             half nv = abs(dot(normal, viewDir));    // This abs allow to limit artifact
         #endif
 
-        float noneNormalizeNL = dot(normal, light.dir);
-        float nl = saturate(noneNormalizeNL);
+        float nl = saturate(dot(normal, light.dir));
         float nh = saturate(dot(normal, halfDir));
 
         half lv = saturate(dot(light.dir, viewDir));
         half lh = saturate(dot(light.dir, halfDir));
 
         // Diffuse term
-        half diffuseTerm = DisneyDiffuse(nv, nl, lh, perceptualRoughness) * nl;
+        //half diffuseTerm = DisneyDiffuse(nv, nl, lh, perceptualRoughness) * nl;
 
         // Specular term
         // HACK: theoretically we should divide diffuseTerm by Pi and not multiply specularTerm!
@@ -427,68 +413,88 @@
         #   else
         surfaceReduction = 1.0 / (roughness*roughness + 1.0);           // fade \in [0.5;1]
         #   endif
+
         // To provide true Lambert lighting, we need to be able to kill specular completely.
         specularTerm *= any(specColor) ? 1.0 : 0.0;
 
-        half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
-        //return _LightColor0.rgbr * diffuseTerm ;
-        // NPR Main
-        // 1. 对Diffuse进行处理 控制暗面大小,颜色
-        // 控制暗部的色彩渐变范围
-        // 对漫反射光照值的暗部进行一个渐变处理, 否则是没有渐变  然后对暗部进行向暗部扩张行为
-        float oneMinusdiffuseTerm = 1-diffuseTerm; // 取得暗部
-        float shadowTerm =  smoothstep(_ShadowStrength,1,oneMinusdiffuseTerm).rrrr;
-        diffuseTerm = 1-shadowTerm;
-        //oneMinusdiffuseTerm = step(1,1-diffuseTerm); // 对暗部进行二值化
-        // oneMinusdiffuseTerm *= noneNormalizeNL; // 对暗部进行渐变
-        // oneMinusdiffuseTerm += diffuseTerm;
-        // _ShadowStrength-=5; // 方便材质面板调试 从最低-5 到0
-        // _ShadowFade-=0.499999; // 同上
-        // diffuseTerm = smoothstep(_ShadowStrength,_ShadowFade,oneMinusdiffuseTerm); // 跳转暗部范围
-
         // 包含接受的投影色
-        float reciveShadowTerm = nl*(1-light.color);
+        float reciveShadowTerm = nl*(1-light.color);//1-step(.1,light.color.r+light.color.g+light.color.b);
         float3 reciveShadowColor = reciveShadowTerm * _ReceiveShadowColor +1- reciveShadowTerm;
-        // 取得漫反射暗面
-        //float shadowTerm = 1- diffuseTerm;
-        float3 shadowColor = shadowTerm * _ShadowColor + 1-shadowTerm;
-        
-        // 2. 明暗交界线加深 叠加在亮面上面 
-        float midLine =  1-abs(noneNormalizeNL) * _MiddleLineStrength;
-        
-        float3 midColor = _MiddleLineColor * midLine + (1-midLine) ;
 
+        half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
+        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb * reciveShadowColor);//diffuseTerm) //草地不需要漫反射,通过贴图绘制
+        + specularTerm * light.color * FresnelTerm (specColor, lh)
+        + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
 
-        // 菲涅尔
-        float3 fresnel = pow(1-nv,_FresnelStrength) * _FresnelColor;
-
-
-        // 固有色 *(全局光照 + 灯光色 * 漫反射 + 阴影 + 投影)  问题: 灯光色中不应该包含了阴影
-        half3 color =   diffColor * (gi.diffuse + _LightColor0.rgb * min(shadowColor,midColor) * reciveShadowColor ) // 漫反射  根据全局光照 灯光颜色 模型贴图 决定色彩,参数为迪士尼brdf经验模型
-        + specularTerm * light.color * FresnelTerm (specColor, lh) // 反射 根据金属度与光滑度决定反射效果, 反射色为灯光颜色
-        + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv) // 反射天空采样 色彩根据天空球(probe) 反射颜色(金属反射本身)  ,参数根据粗糙程度
-        + fresnel
-        //+ oneMinusDiffuseTerm * shadowCol // 阴影色
-        ; 
-        
-        
-        //color = gi.diffuse + _LightColor0.rgb  * shadowColor * reciveShadowColor + lineTTT;
-        // color =  diffuseTerm;
-        //color = midColor;
+        //color = _LightColor0.rgb* (reciveShadowTerm*float3(1,0,0) + (1-reciveShadowTerm) );
+        //color = reciveShadowColor;
         return half4(color, 1);
     }
     
+    //-----------------------------Noise Map--------------------------------------------------------
+    float2 Unity_GradientNoise_Dir_float(float2 p)
+    {
+        // Permutation and hashing used in webgl-nosie goo.gl/pX7HtC
+        p = p % 289;
+        float x = (34 * p.x + 1) * p.x % 289 + p.y;
+        x = (34 * x + 1) * x % 289;
+        x = frac(x / 41) * 2 - 1;
+        return normalize(float2(x - floor(x + 0.5), abs(x) - 0.5));
+    }
+
+    void Unity_GradientNoise_float(float2 UV, float Scale, out float Out)
+    { 
+        float2 p = UV * Scale;
+        float2 ip = floor(p);
+        float2 fp = frac(p);
+        float d00 = dot(Unity_GradientNoise_Dir_float(ip), fp);
+        float d01 = dot(Unity_GradientNoise_Dir_float(ip + float2(0, 1)), fp - float2(0, 1));
+        float d10 = dot(Unity_GradientNoise_Dir_float(ip + float2(1, 0)), fp - float2(1, 0));
+        float d11 = dot(Unity_GradientNoise_Dir_float(ip + float2(1, 1)), fp - float2(1, 1));
+        fp = fp * fp * fp * (fp * (fp * 6 - 15) + 10);
+        Out = lerp(lerp(d00, d01, fp.y), lerp(d10, d11, fp.y), fp.x) + 0.5;
+    }
+
     //-----------------------------Forward Render--------------------------------------------------------
 
     VertexOutputForwardBase vertForwardBase (VertexInput v)
     {
+        // -----------------Grass Vertex Movement Start-----------------
+        float4 OriginPosWorld = mul(unity_ObjectToWorld, v.vertex);
+        float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
+        //v.vertex.y += 1;
+        float2 noiseUV = posWorld.xz + _Time.y * _WindDir.xy;
+        float noiseOffset;
+        Unity_GradientNoise_float(noiseUV,_WindDensity,noiseOffset); // 风长(一次风能吹动多少草)
+        noiseOffset-= 0.5f; // -.5~.5
+        noiseOffset *= _WindStrength; // 风强度
+        float4 newWorldPos = posWorld + float4(noiseOffset,0,0,0);
+        posWorld = lerp(posWorld,newWorldPos,v.uv0.y);
+
+        // Interactive Grass Movement
+        for (int n = 0; n<_PositionArrayCount;n++){
+            float2 dir =  OriginPosWorld.xz - _ObstaclePositions[n].xz;
+            float dirLength = length(dir);
+            dirLength =_InteractiveRange-clamp(dirLength,0,_InteractiveRange); // Clamp踩草长度
+            float2 value=  dirLength * dir * v.uv0.y;
+            value = clamp(value,-_InteractiveStrength,_InteractiveStrength);
+            posWorld.xz += value;
+            posWorld.y -=abs(value);
+        }
+
+        v.vertex =  mul(unity_WorldToObject,posWorld);
+
+
+        // -----------------Grass Vertex Movement Over-----------------
+
         UNITY_SETUP_INSTANCE_ID(v);
         VertexOutputForwardBase o;
         UNITY_INITIALIZE_OUTPUT(VertexOutputForwardBase, o);
         UNITY_TRANSFER_INSTANCE_ID(v, o);
         UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+        
+        posWorld = mul(unity_ObjectToWorld, v.vertex);
 
-        float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
         #if UNITY_REQUIRE_FRAG_WORLDPOS
             #if UNITY_PACK_WORLDPOS_WITH_TANGENT
                 o.tangentToWorldAndPackedData[0].w = posWorld.x;
@@ -530,6 +536,7 @@
         #endif
 
         UNITY_TRANSFER_FOG(o,o.pos);
+        
         return o;
     }
 
@@ -548,7 +555,7 @@
         half occlusion = Occlusion(i.tex.xy);
         UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
 
-        half4 c = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
+        half4 c = Grass_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
         c.rgb += Emission(i.tex.xy);
         
 
@@ -626,7 +633,7 @@
         UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);
         UnityIndirect noIndirect = ZeroIndirect ();
 
-        half4 c = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, light, noIndirect);
+        half4 c = Grass_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, light, noIndirect);
 
         UNITY_APPLY_FOG_COLOR(i.fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass
         return OutputForward (c, s.alpha);
@@ -743,7 +750,7 @@
 
         UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, dummyLight, sampleReflectionsInDeferred);
 
-        half3 emissiveColor = NPR_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect).rgb;
+        half3 emissiveColor = Grass_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect).rgb;
 
         #ifdef _EMISSION
             emissiveColor += Emission (i.tex.xy);

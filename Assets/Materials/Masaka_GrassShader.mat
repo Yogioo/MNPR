@@ -6,20 +6,21 @@ Material:
   m_ObjectHideFlags: 0
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
-  m_Name: HAIR
-  m_Shader: {fileID: 4800000, guid: ad5273e32b02f89429a11cf131914a9a, type: 3}
-  m_ShaderKeywords: _NORMALMAP
+  m_Name: Masaka_GrassShader
+  m_Shader: {fileID: 4800000, guid: 85c40023e48983e4397a735b4eb7949f, type: 3}
+  m_ShaderKeywords: _ALPHATEST_ON _NORMALMAP
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2450
+  stringTagMap:
+    RenderType: TransparentCutout
   disabledShaderPasses: []
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 4ce6389aaedc35744a3d1de3bfe3836d, type: 3}
+        m_Texture: {fileID: 2800000, guid: 5b9cb070dc0c48d488c5b58782329012, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -38,12 +39,20 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _GradientNoise:
+        m_Texture: {fileID: 2800000, guid: 95ef4804fe0be4c999ddaa383536cde8, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 8f82cc9078c81894ba806790f615a577, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3d55ca643747bf14d99bb40a78cda8b3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
         m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalTex:
+        m_Texture: {fileID: 2800000, guid: 5b9cb070dc0c48d488c5b58782329012, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -57,30 +66,36 @@ Material:
     m_Floats:
     - _BumpScale: 1
     - _CullMode: 0
-    - _Cutoff: 0.5
+    - _Cutoff: 0.04
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _FresnelStrength: 10
-    - _GlossMapScale: 0
-    - _Glossiness: 0.399
+    - _GlossMapScale: 1
+    - _Glossiness: 0
     - _GlossyReflections: 1
+    - _InteractiveRange: 1
+    - _InteractiveStrength: 0.2
     - _Metallic: 0
-    - _MiddleLineStrength: 742.56
-    - _MiddleLineWidth: 0.01
-    - _Mode: 0
+    - _MiddleLineStrength: 6.68
+    - _Mode: 1
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ShadowFade: 0
-    - _ShadowLength: -7.5
-    - _ShadowStrength: 4.32
+    - _PositionArrayCount: 1
+    - _ShadowStrength: 0.361
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _UVSec: 0
+    - _WindDensity: 0.1
+    - _WindLength: 0.07
+    - _WindStrength: 0.1
     - _ZWrite: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _MiddleLineColor: {r: 0.5724139, g: 0, b: 1, a: 1}
-    - _ReceiveShadowColor: {r: 0, g: 0.42068958, b: 1, a: 1}
-    - _ShadowColor: {r: 0.4779412, g: 0.47895536, b: 0.625, a: 1}
+    - _FresnelColor: {r: 0, g: 1, b: 0, a: 1}
+    - _MiddleLineColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ObstaclePositions: {r: 0, g: 0, b: 0, a: 0}
+    - _ReceiveShadowColor: {r: 1, g: 0, b: 0, a: 1}
+    - _ShadowColor: {r: 1, g: 0, b: 0, a: 1}
+    - _WindDir: {r: 10, g: 5, b: 0, a: 0}

@@ -56,22 +56,20 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _BumpScale: 1
-    - _CullMode: 2
+    - _CullMode: 0
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
+    - _FresnelStrength: 7.01
     - _GlossMapScale: 1
-    - _Glossiness: 0.111
+    - _Glossiness: 0.5
     - _GlossyReflections: 1
     - _Metallic: 0
-    - _MiddleLineStrength: 27.6
-    - _MiddleLineWidth: 0.042
+    - _MiddleLineStrength: 9.17
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _ShadowFade: 0.43
-    - _ShadowLength: -0.5
-    - _ShadowStrength: 4.87
+    - _ShadowStrength: 0
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -80,6 +78,7 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _MiddleLineColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ReceiveShadowColor: {r: 0, g: 1, b: 0.3793106, a: 1}
-    - _ShadowColor: {r: 0.42647058, g: 0.42647058, b: 0.42647058, a: 1}
+    - _FresnelColor: {r: 1, g: 1, b: 1, a: 1}
+    - _MiddleLineColor: {r: 0, g: 1, b: 0, a: 1}
+    - _ReceiveShadowColor: {r: 1, g: 0, b: 0, a: 1}
+    - _ShadowColor: {r: 1, g: 0, b: 0, a: 1}

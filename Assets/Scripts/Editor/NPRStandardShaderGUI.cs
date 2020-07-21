@@ -64,4 +64,51 @@ namespace MNPR.MNPREditor
             m_MaterialEditor.ShaderProperty(m_FresnelStrength, CustomStyles.FresnelStrength.text);
         }
     }
+
+    internal class GrassShaderGUI: StandardShaderGUIBase
+    {
+        #region Property
+
+        protected MaterialProperty m_ReceiveShadowColor;
+        protected MaterialProperty m_WindDir;
+        protected MaterialProperty m_WindStrength;
+        protected MaterialProperty m_WindDensity;
+
+
+        private static class CustomStyles
+        {
+           
+            public static GUIContent ReceiveShadowColor = new GUIContent("Receive Shadow Color");
+            public static GUIContent WindDir = new GUIContent("Wind Dir");
+            public static GUIContent WindStrength = new GUIContent("Wind Strength");
+            public static GUIContent WindDensity = new GUIContent("Wind Density");
+
+        }
+
+        #endregion 
+
+        public override void FindPropertiesEx(MaterialProperty[] props)
+        {
+            base.FindPropertiesEx(props);
+            
+            m_ReceiveShadowColor = FindProperty("_ReceiveShadowColor", props);
+            m_WindDir = FindProperty("_WindDir", props);
+            m_WindStrength = FindProperty("_WindStrength", props); 
+             m_WindDensity = FindProperty("_WindDensity", props);
+
+
+
+
+        }
+        public override void DoExtention()
+        {
+            base.DoExtention();
+
+            m_MaterialEditor.ShaderProperty(m_ReceiveShadowColor, CustomStyles.ReceiveShadowColor.text);
+            m_MaterialEditor.ShaderProperty(m_WindDir, CustomStyles.WindDir.text);
+            m_MaterialEditor.ShaderProperty(m_WindStrength, CustomStyles.WindStrength.text);
+            m_MaterialEditor.ShaderProperty(m_WindDensity, CustomStyles.WindDensity.text);
+
+        }
+    }
 }
