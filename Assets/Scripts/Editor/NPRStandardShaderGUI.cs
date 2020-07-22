@@ -50,9 +50,9 @@ namespace MNPR.MNPREditor
 
 
         }
-        public override void DoExtention()
+        public override void DoExtention(Material mat)
         {
-            base.DoExtention();
+            base.DoExtention(mat);
             m_MaterialEditor.ShaderProperty(m_CullMode, CustomStyles.CullMode.text);
             m_MaterialEditor.ShaderProperty(m_ShadowColor, CustomStyles.ShadowColor.text);
             m_MaterialEditor.ShaderProperty(m_ReceiveShadowColor, CustomStyles.ReceiveShadowColor.text);
@@ -100,9 +100,9 @@ namespace MNPR.MNPREditor
 
 
         }
-        public override void DoExtention()
+        public override void DoExtention(Material mat)
         {
-            base.DoExtention();
+            base.DoExtention(mat);
 
             m_MaterialEditor.ShaderProperty(m_ReceiveShadowColor, CustomStyles.ReceiveShadowColor.text);
             m_MaterialEditor.ShaderProperty(m_WindDir, CustomStyles.WindDir.text);

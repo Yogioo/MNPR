@@ -21,6 +21,9 @@
         #if UNITY_STANDARD_SIMPLE
             half3 tangentSpaceNormal;
         #endif
+
+        float2 uvOffset; //时差uv偏移
+        float4 blendValue;
     };
 
     // ------------------------------------------------------------------
@@ -90,9 +93,12 @@
     float3 _ReceiveShadowColor;
 
     // Blend Property
-    float4 _TintR,_TintG,_TintB;
-    sampler2D _SeconedR,_SeconedG,_SeconedB,_BlendTex,_HightMap;
+    float4 _TintM,_TintR,_TintG,_TintB; // Color Mixed
+    sampler2D _MapM,_MapR,_MapG,_MapB,_BlendTex,_HightMap; // Map And Normal And Hight
 
-    sampler2D _RNormal,_GNormal,_BNormal;
-    float _RBumpScale,_GBumpScale,_BBumpScale,_WorldScale,_RScale,_GScale,_BScale,_MScale;
+    sampler2D _MNormalMap,_RNormalMap,_GNormalMap,_BNormalMap, _BlendNormalMap; // Normal Map 
+    float _MBumpScale,_RBumpScale,_GBumpScale,_BBumpScale; // Map Normal Scale
+    float _WorldScale; // Blend Scale
+    float _MScale,_RScale,_GScale,_BScale; // Map Scale
+    float _BlendNormalBumpScale;
 #endif

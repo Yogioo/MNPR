@@ -10,6 +10,15 @@
 /[Ll]ogs/
 /[Mm]emoryCaptures/
 
+# Custom Art Data
+/[Aa]ssets/Arts/
+/[Aa]ssets/GreenForest/
+/[Aa]ssets/NatureStarterKit2/
+/[Aa]ssets/NGUI/
+/ProjectSettings/ProjectVersion.txt
+*.gitignore
+*/*.meta
+
 # Asset meta data should only be ignored when the corresponding asset is also ignored
 !/[Aa]ssets/**/*.meta
 

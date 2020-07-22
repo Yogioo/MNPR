@@ -174,76 +174,133 @@
         #define UNITY_SETUP_BRDF_INPUT SpecularSetup
     #endif
 
-    inline FragmentCommonData SpecularSetup (float4 i_tex)
-    {
-        half4 specGloss = SpecularGloss(i_tex.xy);
-        half3 specColor = specGloss.rgb;
-        half smoothness = specGloss.a;
-
-        half oneMinusReflectivity;
-        half3 diffColor = EnergyConservationBetweenDiffuseAndSpecular (Albedo(i_tex), specColor, /*out*/ oneMinusReflectivity);
-
-        FragmentCommonData o = (FragmentCommonData)0;
-        o.diffColor = diffColor;
-        o.specColor = specColor;
-        o.oneMinusReflectivity = oneMinusReflectivity;
-        o.smoothness = smoothness;
-        return o;
+    
+    float3 CreateBinormal (float3 normal, float3 tangent, float binormalSign) {
+        return cross(normal, tangent.xyz) *
+        (binormalSign * unity_WorldTransformParams.w);
     }
 
-    inline FragmentCommonData RoughnessSetup(float4 i_tex)
-    {
-        half2 metallicGloss = MetallicRough(i_tex.xy);
-        half metallic = metallicGloss.x;
-        half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
-        half oneMinusReflectivity;
-        half3 specColor;
-        half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
-
-        FragmentCommonData o = (FragmentCommonData)0;
-        o.diffColor = diffColor;
-        o.specColor = specColor;
-        o.oneMinusReflectivity = oneMinusReflectivity;
-        o.smoothness = smoothness;
-        return o;
+    float3 GetNormal(float2 uv,sampler2D normalMap,float bumpScale){
+        float3 norm = float3(0,1,0);
+        float3 tang = float3(0,0,1);
+        float3 binormal = float3(1,0,0);
+        float3 tangentSpaceNormal = UnpackScaleNormal(tex2D(normalMap, uv), bumpScale);
+        return normalize(
+        tangentSpaceNormal.x * tang +
+        tangentSpaceNormal.y * binormal +
+        tangentSpaceNormal.z * norm
+        );
     }
 
-    inline FragmentCommonData MetallicSetup (float4 i_tex)
+    half3 Albedo2(float4 texcoords,float3 worldPos,float3 i_viewDirForParallax,float2 offset,float4 blendValue)
     {
+        //#region Mix All Map 
+        //-------------------------Mix All Map Start-----------------------------------------
+        
+        float2 mUV = worldPos.xz * _MScale+offset;
+        float2 rUV = worldPos.xz * _RScale+offset;
+        float2 gUV = worldPos.xz * _GScale+offset;
+        float2 bUV = worldPos.xz * _BScale+offset;
+        float2 blendUV = worldPos.xz * _WorldScale+offset ;
+
+        float3 m = tex2D(_MapM,mUV);
+        float3 r = tex2D(_MapR,rUV);
+        float3 g = tex2D(_MapG,gUV);
+        float3 b = tex2D(_MapB,bUV);
+        
+        float3 finalAlbedo = blendValue.r*r+blendValue.g *g +blendValue.b*b + m*blendValue.a;
+
+        //-------------------------Mix All Map Over-------------------------------------------
+        //#endregion
+
+        half3 albedo =  finalAlbedo;//_Color.rgb * tex2D (_MainTex, texcoords.xy).rgb;
+        //albedo = tex2D(_MapM,mUV + texcoords.xy);
+        #if _DETAIL
+            #if (SHADER_TARGET < 30)
+                // SM20: instruction count limitation
+                // SM20: no detail mask
+                half mask = 1;
+            #else
+                half mask = DetailMask(texcoords.xy);
+            #endif
+            half3 detailAlbedo = tex2D (_DetailAlbedoMap, texcoords.zw).rgb;
+            #if _DETAIL_MULX2
+                albedo *= LerpWhiteTo (detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
+            #elif _DETAIL_MUL
+                albedo *= LerpWhiteTo (detailAlbedo, mask);
+            #elif _DETAIL_ADD
+                albedo += detailAlbedo * mask;
+            #elif _DETAIL_LERP
+                albedo = lerp (albedo, detailAlbedo, mask);
+            #endif
+        #endif
+        return albedo;
+    }
+
+
+
+    inline FragmentCommonData MetallicSetup (float4 i_tex,float3 worldPos,float3 i_viewDirForParallax,float2 offset)
+    {
+        //-------------------------Mix All Map Start-----------------------------------------
+        
+        float2 mUV = worldPos.xz * _MScale+offset;
+        float2 rUV = worldPos.xz * _RScale+offset;
+        float2 gUV = worldPos.xz * _GScale+offset;
+        float2 bUV = worldPos.xz * _BScale+offset;
+        float2 blendUV = worldPos.xz * _WorldScale+offset ;
+        
+        float3 blendMap = tex2D(_BlendTex,blendUV);
+        float bR = blendMap.r;
+        float bG = blendMap.g;
+        float bB = blendMap.b;
+        float bM =max(0,1-bR-bG-bB);
+
+        float4 blendValue = float4(bR,bG,bB,bM);
+        //o.blendValue = blendValue;
+        //-------------------------Mix All Map Over-------------------------------------------
         half2 metallicGloss = MetallicGloss(i_tex.xy);
         half metallic = metallicGloss.x;
         half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
         half oneMinusReflectivity;
         half3 specColor;
-        half3 diffColor = DiffuseAndSpecularFromMetallic (Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
+        half3 diffColor = DiffuseAndSpecularFromMetallic (Albedo2(i_tex,worldPos,i_viewDirForParallax,offset,blendValue), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
 
         FragmentCommonData o = (FragmentCommonData)0;
         o.diffColor = diffColor;
         o.specColor = specColor;
         o.oneMinusReflectivity = oneMinusReflectivity;
         o.smoothness = smoothness;
+        o.blendValue = blendValue;
         return o;
     }
+
+
+
 
     // parallax transformed texcoord is used to sample occlusion
     inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld)
     {
-        i_tex = Parallax(i_tex, i_viewDirForParallax);
 
+        i_tex = Parallax(i_tex, i_viewDirForParallax);
+        float4 offset = float4(0,0,0,0);
+        offset = Parallax(offset,i_viewDirForParallax);
+        
         half alpha = Alpha(i_tex.xy);
         #if defined(_ALPHATEST_ON)
             clip (alpha - _Cutoff);
         #endif
 
-        FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex);
+        FragmentCommonData o = MetallicSetup (i_tex,i_posWorld,i_viewDirForParallax,offset.xy);
         o.normalWorld = PerPixelWorldNormal(i_tex, tangentToWorld);
         o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
         o.posWorld = i_posWorld;
+        o.uvOffset = offset;
 
         // NOTE: shader relies on pre-multiply alpha-blend (_SrcBlend = One, _DstBlend = OneMinusSrcAlpha)
         o.diffColor = PreMultiplyAlpha (o.diffColor, alpha, o.oneMinusReflectivity, /*out*/ o.alpha);
+
         return o;
     }
 
@@ -334,6 +391,10 @@
 
         return ambientOrLightmapUV;
     }
+
+
+
+
     
     //------------------------------BRDF-------------------------------------------------------
     //#region BRDF Des
@@ -494,7 +555,9 @@
 
     half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     {
-        // 
+
+
+
         UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
         // 初始化Fragment属性 : Diff Spec Mat Routh worldNormal viewDir tangent refl
         FRAGMENT_SETUP(s)
@@ -509,11 +572,46 @@
         half occlusion = Occlusion(i.tex.xy);
         // Ambinet + Globle
         UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
+
+        //-------------------------Mix All Map Start-----------------------------------------
+
+        
+        float2 mUV = s.posWorld.xz * _MScale + s.uvOffset;
+        float2 rUV = s.posWorld.xz * _RScale+ s.uvOffset;
+        float2 gUV = s.posWorld.xz * _GScale+ s.uvOffset;
+        float2 bUV = s.posWorld.xz * _BScale+ s.uvOffset;
+        float2 blendUV = s.posWorld.xz * _WorldScale+ s.uvOffset;
+        
+        float bR = s.blendValue.r;
+        float bG = s.blendValue.g;
+        float bB = s.blendValue.b;
+        float bM =s.blendValue.a;
+
+        // mix normal
+        
+        float3 mN = GetNormal(mUV,_MNormalMap,_MBumpScale);
+        float3 rN = GetNormal(rUV,_RNormalMap,_RBumpScale);
+        float3 gN = GetNormal(gUV,_GNormalMap,_GBumpScale);
+        float3 bN = GetNormal(bUV,_BNormalMap,_BBumpScale);
+        float3 n1 = GetNormal(blendUV,_BlendNormalMap,_BlendNormalBumpScale);
+
+        float3 finalWorldNormal;
+        float3 resultNormal;
+        float3 n2 =  normalize(rN*s.blendValue.r+gN *s.blendValue.g +bN*s.blendValue.b + mN*s.blendValue.a);
+        resultNormal = (n1+n2)/2;
+        
+        s.normalWorld = resultNormal;
+
+
+
+        // //-------------------------Mix All Map Over-------------------------------------------
+
         // BRDF
         half4 c = Ground_BRDF1_Unity_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
         // Emission
         c.rgb += Emission(i.tex.xy);
-        //c.rgb = s.specColor;
+        //c.rgb = tex2D(_MNormalMap,mUV);
+        //c.rgb = resultNormal;//UnpackScaleNormal(tex2D(_RNormalMap,rUV),_RBumpScale).rgb ;
         
 
         UNITY_APPLY_FOG(i.fogCoord, c.rgb);

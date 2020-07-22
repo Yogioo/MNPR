@@ -175,7 +175,7 @@ namespace MNPR.MNPREditor
 
                 EditorGUILayout.Space();
 
-                DoExtention();
+                DoExtention(material);
 
                 // Secondary properties
                 GUILayout.Label(Styles.secondaryMapsText, EditorStyles.boldLabel);
@@ -208,7 +208,7 @@ namespace MNPR.MNPREditor
         /// <summary>
         /// Custom Editor Override Method
         /// </summary>
-        public virtual void DoExtention()
+        public virtual void DoExtention(Material mat)
         {
 
         }
@@ -434,7 +434,7 @@ namespace MNPR.MNPREditor
             SetMaterialKeywords(material, workflowMode);
         }
 
-        static void SetKeyword(Material m, string keyword, bool state)
+        protected static void SetKeyword(Material m, string keyword, bool state)
         {
             if (state)
                 m.EnableKeyword(keyword);

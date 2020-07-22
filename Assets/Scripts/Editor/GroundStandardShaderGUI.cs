@@ -28,15 +28,13 @@ namespace MNPR.MNPREditor
 
             m_CullMode = FindProperty("_CullMode", props);
             m_ReceiveShadowColor = FindProperty("_ReceiveShadowColor", props);
-
-
-
         }
-        public override void DoExtention()
+        public override void DoExtention(Material mat)
         {
-            base.DoExtention();
+            base.DoExtention(mat);
             m_MaterialEditor.ShaderProperty(m_CullMode, CustomStyles.CullMode.text);
             m_MaterialEditor.ShaderProperty(m_ReceiveShadowColor, CustomStyles.ReceiveShadowColor.text);
+            SetKeyword(mat, "_PARALLAXMAP", true);
         }
     }
 
