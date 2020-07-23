@@ -55,6 +55,7 @@
 		Out = lerp(lerp(d00, d01, fp.y), lerp(d10, d11, fp.y), fp.x) + 0.5;
 	}
 
+
 	v2f vert (appdata v)
 	{
 		// -----------------Grass Vertex Movement Start-----------------
@@ -86,9 +87,7 @@
 		// -----------------Grass Vertex Movement Over-----------------
 
 
-		v2f o;
-		v.vertex.xz += sin(_Time.y)/5 *v.vertex.y/1;
-		
+		v2f o;		
 		o.pos = UnityObjectToClipPos(v.vertex);
 		o.uv = TRANSFORM_TEX(v.uv,_MainTex);
 		TRANSFER_SHADOW_CASTER (o); // make light work
@@ -99,7 +98,6 @@
 	{
 		clip(tex2D(_MainTex,i.uv).a - _Cutoff);
 		SHADOW_CASTER_FRAGMENT(i)
-		
 	}
 
 #endif // UNITY_STANDARD_SHADOW_INCLUDED

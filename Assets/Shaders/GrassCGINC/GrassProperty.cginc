@@ -41,6 +41,8 @@
             float3 posWorld                 : TEXCOORD8;
         #endif
 
+        float4 screenPos : TEXCOORD9;
+
         UNITY_VERTEX_INPUT_INSTANCE_ID
         UNITY_VERTEX_OUTPUT_STEREO
     };
@@ -63,6 +65,7 @@
         #if defined(_PARALLAXMAP)
             half3 viewDirForParallax            : TEXCOORD8;
         #endif
+        float4 screenPos : TEXCOORD9;
 
         UNITY_VERTEX_OUTPUT_STEREO
     };
@@ -82,9 +85,11 @@
         #if UNITY_REQUIRE_FRAG_WORLDPOS && !UNITY_PACK_WORLDPOS_WITH_TANGENT
             float3 posWorld                     : TEXCOORD6;
         #endif
+        float4 screenPos : TEXCOORD9;
 
         UNITY_VERTEX_OUTPUT_STEREO
     };
+
 
     float3 _ReceiveShadowColor;
     float2 _WindDir;
@@ -94,5 +99,24 @@
     float3 _ObstaclePositions[100];
 
     float _InteractiveRange,_InteractiveStrength;
+
+    // Blend Property
+    float4 _TintM,_TintR,_TintG,_TintB; // Color Mixed
+
+    UNITY_DECLARE_TEX2DARRAY(_MapArray);
+    UNITY_DECLARE_TEX2DARRAY(_NormalArray);
+
+    sampler2D _BlendTex; // Map And Normal And Hight
+
+    sampler2D  _BlendNormalMap; // Normal Map 
+    float _MBumpScale,_RBumpScale,_GBumpScale,_BBumpScale; // Map Normal Scale
+    float _WorldScale; // Blend Scale
+    float _MScale,_RScale,_GScale,_BScale; // Map Scale
+    float _BlendNormalBumpScale;
+
+    // Blend Item Get Depth Texture
+    UNITY_DECLARE_DEPTH_TEXTURE( _CameraDepthTexture );
+    uniform float4 _CameraDepthTexture_TexelSize;
+    float _BlendValue;
 
 #endif

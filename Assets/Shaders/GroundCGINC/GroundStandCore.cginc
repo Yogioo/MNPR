@@ -204,10 +204,11 @@
         float2 bUV = worldPos.xz * _BScale+offset;
         float2 blendUV = worldPos.xz * _WorldScale+offset ;
 
-        float3 m = tex2D(_MapM,mUV);
-        float3 r = tex2D(_MapR,rUV);
-        float3 g = tex2D(_MapG,gUV);
-        float3 b = tex2D(_MapB,bUV);
+        
+        float3 m = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(mUV,0))* _TintM;
+        float3 r =  UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(rUV,1))* _TintR;
+        float3 g = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(gUV,2))* _TintG;
+        float3 b =  UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(bUV,3))* _TintB;
         
         float3 finalAlbedo = blendValue.r*r+blendValue.g *g +blendValue.b*b + m*blendValue.a;
 
@@ -588,11 +589,36 @@
         float bM =s.blendValue.a;
 
         // mix normal
+
+        float3 norm = float3(0,1,0);
+        float3 tang = float3(0,0,1);
+        float3 binormal = float3(1,0,0);
+
+        float3 mN = UnpackScaleNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalArray, float3(mUV,0)), _MBumpScale);
+        mN=  normalize(
+        mN.x * tang +
+        mN.y * binormal +
+        mN.z * norm
+        );
+        float3 rN = UnpackScaleNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalArray, float3(rUV,1)), _RBumpScale);
+        rN=  normalize(
+        rN.x * tang +
+        rN.y * binormal +
+        rN.z * norm
+        );
+        float3 gN = UnpackScaleNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalArray, float3(gUV,2)), _GBumpScale);
+        gN=  normalize(
+        gN.x * tang +
+        gN.y * binormal +
+        gN.z * norm
+        );
+        float3 bN = UnpackScaleNormal(UNITY_SAMPLE_TEX2DARRAY(_NormalArray, float3(bUV,3)), _BBumpScale);
+        bN=  normalize(
+        bN.x * tang +
+        bN.y * binormal +
+        bN.z * norm
+        );
         
-        float3 mN = GetNormal(mUV,_MNormalMap,_MBumpScale);
-        float3 rN = GetNormal(rUV,_RNormalMap,_RBumpScale);
-        float3 gN = GetNormal(gUV,_GNormalMap,_GBumpScale);
-        float3 bN = GetNormal(bUV,_BNormalMap,_BBumpScale);
         float3 n1 = GetNormal(blendUV,_BlendNormalMap,_BlendNormalBumpScale);
 
         float3 finalWorldNormal;
@@ -612,7 +638,7 @@
         c.rgb += Emission(i.tex.xy);
         //c.rgb = tex2D(_MNormalMap,mUV);
         //c.rgb = resultNormal;//UnpackScaleNormal(tex2D(_RNormalMap,rUV),_RBumpScale).rgb ;
-        
+        //c.rgb = resultNormal;
 
         UNITY_APPLY_FOG(i.fogCoord, c.rgb);
 

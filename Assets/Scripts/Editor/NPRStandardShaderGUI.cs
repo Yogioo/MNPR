@@ -69,10 +69,14 @@ namespace MNPR.MNPREditor
     {
         #region Property
 
+        protected MaterialProperty m_CullMode;
         protected MaterialProperty m_ReceiveShadowColor;
         protected MaterialProperty m_WindDir;
         protected MaterialProperty m_WindStrength;
         protected MaterialProperty m_WindDensity;
+
+        protected MaterialProperty m_InteractiveRange;
+        protected MaterialProperty m_InteractiveStrength;
 
 
         private static class CustomStyles
@@ -83,6 +87,10 @@ namespace MNPR.MNPREditor
             public static GUIContent WindStrength = new GUIContent("Wind Strength");
             public static GUIContent WindDensity = new GUIContent("Wind Density");
 
+            public static GUIContent m_InteractiveRange = new GUIContent("Interactive Range");
+            public static GUIContent m_InteractiveStrength = new GUIContent("Interactive Strength");
+            public static GUIContent CullMode = new GUIContent("Cull Mode");
+
         }
 
         #endregion 
@@ -90,11 +98,14 @@ namespace MNPR.MNPREditor
         public override void FindPropertiesEx(MaterialProperty[] props)
         {
             base.FindPropertiesEx(props);
-            
+            m_CullMode = FindProperty("_CullMode", props);
+
             m_ReceiveShadowColor = FindProperty("_ReceiveShadowColor", props);
             m_WindDir = FindProperty("_WindDir", props);
             m_WindStrength = FindProperty("_WindStrength", props); 
              m_WindDensity = FindProperty("_WindDensity", props);
+            m_InteractiveRange = FindProperty("_InteractiveRange", props);
+            m_InteractiveStrength = FindProperty("_InteractiveStrength", props);
 
 
 
@@ -103,11 +114,14 @@ namespace MNPR.MNPREditor
         public override void DoExtention(Material mat)
         {
             base.DoExtention(mat);
+            m_MaterialEditor.ShaderProperty(m_CullMode, CustomStyles.CullMode.text);
 
             m_MaterialEditor.ShaderProperty(m_ReceiveShadowColor, CustomStyles.ReceiveShadowColor.text);
             m_MaterialEditor.ShaderProperty(m_WindDir, CustomStyles.WindDir.text);
             m_MaterialEditor.ShaderProperty(m_WindStrength, CustomStyles.WindStrength.text);
             m_MaterialEditor.ShaderProperty(m_WindDensity, CustomStyles.WindDensity.text);
+            m_MaterialEditor.ShaderProperty(m_InteractiveRange, CustomStyles.m_InteractiveRange.text);
+            m_MaterialEditor.ShaderProperty(m_InteractiveStrength, CustomStyles.m_InteractiveStrength.text);
 
         }
     }

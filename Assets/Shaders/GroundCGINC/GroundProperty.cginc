@@ -94,9 +94,13 @@
 
     // Blend Property
     float4 _TintM,_TintR,_TintG,_TintB; // Color Mixed
-    sampler2D _MapM,_MapR,_MapG,_MapB,_BlendTex,_HightMap; // Map And Normal And Hight
 
-    sampler2D _MNormalMap,_RNormalMap,_GNormalMap,_BNormalMap, _BlendNormalMap; // Normal Map 
+    UNITY_DECLARE_TEX2DARRAY(_MapArray);
+    UNITY_DECLARE_TEX2DARRAY(_NormalArray);
+
+    sampler2D _BlendTex; // Map And Normal And Hight
+
+    sampler2D _BlendNormalMap; // Normal Map 
     float _MBumpScale,_RBumpScale,_GBumpScale,_BBumpScale; // Map Normal Scale
     float _WorldScale; // Blend Scale
     float _MScale,_RScale,_GScale,_BScale; // Map Scale

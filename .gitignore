@@ -11,8 +11,8 @@
 /[Mm]emoryCaptures/
 
 # Custom Art Data
-/[Aa]ssets/Arts/
-/[Aa]ssets/GreenForest/
+/[Aa]ssets/Arts/NotPublishData/
+/[Aa]ssets/Arts/GreenForest/
 /[Aa]ssets/NatureStarterKit2/
 /[Aa]ssets/NGUI/
 /ProjectSettings/ProjectVersion.txt

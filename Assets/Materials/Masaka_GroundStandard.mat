@@ -39,7 +39,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 556f23d937883144cb0878ce82fdea55, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
@@ -51,7 +51,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ParallaxMap:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: cf0e0cfc9e19c4c4493f11a9c341993b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
@@ -68,7 +68,7 @@ Material:
     - _MiddleLineStrength: 2
     - _Mode: 0
     - _OcclusionStrength: 1
-    - _Parallax: 0.005
+    - _Parallax: 0.0252
     - _ShadowStrength: 0.3
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -80,5 +80,5 @@ Material:
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FresnelColor: {r: 0.29999998, g: 0.39999998, b: 0.29999998, a: 1}
     - _MiddleLineColor: {r: 0, g: 0, b: 0, a: 1}
-    - _ReceiveShadowColor: {r: 0, g: 0.08965492, b: 1, a: 1}
+    - _ReceiveShadowColor: {r: 1, g: 0, b: 0, a: 1}
     - _ShadowColor: {r: 0.29999998, g: 0.39999998, b: 0.29999998, a: 1}

@@ -163,61 +163,95 @@
     #define IN_LIGHTDIR_FWDADD(i) half3(i.tangentToWorldAndLightDir[0].w, i.tangentToWorldAndLightDir[1].w, i.tangentToWorldAndLightDir[2].w)
 
     #define FRAGMENT_SETUP(x) FragmentCommonData x = \
-    FragmentSetup(i.tex, i.eyeVec, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i));
+    FragmentSetup(i.tex, i.eyeVec, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i),i.screenPos);
 
     #define FRAGMENT_SETUP_FWDADD(x) FragmentCommonData x = \
-    FragmentSetup(i.tex, i.eyeVec, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i));
+    FragmentSetup(i.tex, i.eyeVec, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i),i.screenPos);
 
 
+    half3 Albedo2(float4 texcoords,float3 worldPos,float4 blendValue,float4 screenPos)
+    {
+        half3 origionAlbedo = _Color.rgb *   tex2D (_MainTex, texcoords.xy).rgb;
+        //#region Mix All Map 
+        //-------------------------Mix All Map Start-----------------------------------------
+        // // Blend Item 
+        // _BlendValue = 15-_BlendValue;
+        // half3 distanceDepth = saturate(worldPos.y*_BlendValue);
+
+        // Blend Item 
+        // screenPos = float4(screenPos.xyz,screenPos.w+0.00000000001);
+        // float4 screenPosNor = screenPos/screenPos.w;
+        // screenPosNor.z = ( UNITY_NEAR_CLIP_VALUE >= 0 ) ? screenPosNor.z : screenPosNor.z * 0.5 + 0.5;
+        // float screenDepth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2Dproj(_CameraDepthTexture,UNITY_PROJ_COORD( screenPos ))));
+        // float distanceDepth = abs( ( screenDepth - (LinearEyeDepth( screenPosNor.z )) ) / ( _BlendValue ) );
+        // distanceDepth = clamp(distanceDepth,0,1);
+        float distanceDepth = saturate( worldPos.y*_BlendValue);
+        
+        float2 mUV = worldPos.xz * _MScale;
+        float2 rUV = worldPos.xz * _RScale;
+        float2 gUV = worldPos.xz * _GScale;
+        float2 bUV = worldPos.xz * _BScale;
+        float2 blendUV = worldPos.xz * _WorldScale ;
+
+        
+        half3 m = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(mUV,0))*_TintM;
+        half3 r = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(rUV,0))*_TintR;
+        half3 g = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(gUV,0))*_TintG;
+        half3 b = UNITY_SAMPLE_TEX2DARRAY(_MapArray,float3(bUV,0))*_TintB;
+
+        
+        // Blend Ground Albedo Value
+        half3 finalAlbedo = lerp(m,r,blendValue.r);//albedoR + albedoG + albedoB + albedo*bO;
+        finalAlbedo = lerp(finalAlbedo,g,blendValue.g);//albedoR + albedoG + albedoB + albedo*bO;
+        finalAlbedo = lerp(finalAlbedo,b,blendValue.b);//albedoR + albedoG + albedoB + albedo*bO;
+        
+        finalAlbedo = lerp(finalAlbedo,origionAlbedo,distanceDepth);
+        // float3 finalAlbedo = blendValue.r*r+blendValue.g *g +blendValue.b*b + m*blendValue.a;
+        //finalAlbedo = distanceDepth;
+
+        //-------------------------Mix All Map Over-------------------------------------------
+        //#endregion
+
+        // half3 albedo =  _Color.rgb * tex2D (_MainTex, texcoords.xy).rgb;
+        //albedo = tex2D(_MapM,mUV + texcoords.xy);
+        #if _DETAIL
+            #if (SHADER_TARGET < 30)
+                // SM20: instruction count limitation
+                // SM20: no detail mask
+                half mask = 1;
+            #else
+                half mask = DetailMask(texcoords.xy);
+            #endif
+            half3 detailAlbedo = tex2D (_DetailAlbedoMap, texcoords.zw).rgb;
+            #if _DETAIL_MULX2
+                finalAlbedo *= LerpWhiteTo (detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
+            #elif _DETAIL_MUL
+                finalAlbedo *= LerpWhiteTo (detailAlbedo, mask);
+            #elif _DETAIL_ADD
+                finalAlbedo += detailAlbedo * mask;
+            #elif _DETAIL_LERP
+                finalAlbedo = lerp (finalAlbedo, detailAlbedo, mask);
+            #endif
+        #endif
+        return finalAlbedo;// LinearEyeDepth( screenPosNor.z );
+    }
 
     #ifndef UNITY_SETUP_BRDF_INPUT
         #define UNITY_SETUP_BRDF_INPUT SpecularSetup
     #endif
 
-    inline FragmentCommonData SpecularSetup (float4 i_tex)
+    inline FragmentCommonData MetallicSetup (float4 i_tex,float3 worldPos,float4 screenPos,float4 blendValue)
     {
-        half4 specGloss = SpecularGloss(i_tex.xy);
-        half3 specColor = specGloss.rgb;
-        half smoothness = specGloss.a;
 
-        half oneMinusReflectivity;
-        half3 diffColor = EnergyConservationBetweenDiffuseAndSpecular (Albedo(i_tex), specColor, /*out*/ oneMinusReflectivity);
 
-        FragmentCommonData o = (FragmentCommonData)0;
-        o.diffColor = diffColor;
-        o.specColor = specColor;
-        o.oneMinusReflectivity = oneMinusReflectivity;
-        o.smoothness = smoothness;
-        return o;
-    }
 
-    inline FragmentCommonData RoughnessSetup(float4 i_tex)
-    {
-        half2 metallicGloss = MetallicRough(i_tex.xy);
-        half metallic = metallicGloss.x;
-        half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
-
-        half oneMinusReflectivity;
-        half3 specColor;
-        half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
-
-        FragmentCommonData o = (FragmentCommonData)0;
-        o.diffColor = diffColor;
-        o.specColor = specColor;
-        o.oneMinusReflectivity = oneMinusReflectivity;
-        o.smoothness = smoothness;
-        return o;
-    }
-
-    inline FragmentCommonData MetallicSetup (float4 i_tex)
-    {
         half2 metallicGloss = MetallicGloss(i_tex.xy);
         half metallic = metallicGloss.x;
         half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
         half oneMinusReflectivity;
         half3 specColor;
-        half3 diffColor = DiffuseAndSpecularFromMetallic (Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
+        half3 diffColor = DiffuseAndSpecularFromMetallic (Albedo2(i_tex,worldPos,blendValue,screenPos), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
 
         FragmentCommonData o = (FragmentCommonData)0;
         o.diffColor = diffColor;
@@ -227,9 +261,46 @@
         return o;
     }
 
+    float3 CreateBinormal (float3 normal, float3 tangent, float binormalSign) {
+        return cross(normal, tangent.xyz) *
+        (binormalSign * unity_WorldTransformParams.w);
+    }
+
+
+    float3 GetNormal(float2 uv,sampler2D normalMap,float bumpScale){
+        float3 norm = float3(0,1,0);
+        float3 tang = float3(0,0,1);
+        float3 binormal = float3(1,0,0);
+        float3 tangentSpaceNormal = UnpackScaleNormal(tex2D(normalMap, uv), bumpScale);
+        return normalize(
+        tangentSpaceNormal.x * tang +
+        tangentSpaceNormal.y * binormal +
+        tangentSpaceNormal.z * norm
+        );
+    }
+
     // parallax transformed texcoord is used to sample occlusion
-    inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld)
+    inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld,float4 screenPos)
     {
+        //-------------------------Mix All Map Start-----------------------------------------
+        
+        float2 mUV = i_posWorld.xz * _MScale;
+        float2 rUV = i_posWorld.xz * _RScale;
+        float2 gUV = i_posWorld.xz * _GScale;
+        float2 bUV = i_posWorld.xz * _BScale;
+        float2 blendUV = i_posWorld.xz * _WorldScale ;
+        
+        float3 blendMap = tex2D(_BlendTex,blendUV);
+        float bR = blendMap.r;
+        float bG = blendMap.g;
+        float bB = blendMap.b;
+        float bM =max(0,1-bR-bG-bB);
+
+        float4 blendValue = float4(bR,bG,bB,bM);
+        //o.blendValue = blendValue;
+        //-------------------------Mix All Map Over-------------------------------------------
+
+
         i_tex = Parallax(i_tex, i_viewDirForParallax);
 
         half alpha = Alpha(i_tex.xy);
@@ -237,8 +308,26 @@
             clip (alpha - _Cutoff);
         #endif
 
-        FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex);
+
+        FragmentCommonData o = MetallicSetup (i_tex,i_posWorld,screenPos,blendValue);
         o.normalWorld = PerPixelWorldNormal(i_tex, tangentToWorld);
+        //------------------------- Mix All Normal Start -------------------------
+
+        // // mix normal
+        
+        // float3 mN = GetNormal(mUV,_MNormalMap,_MBumpScale);
+        // float3 rN = GetNormal(rUV,_RNormalMap,_RBumpScale);
+        // float3 gN = GetNormal(gUV,_GNormalMap,_GBumpScale);
+        // float3 bN = GetNormal(bUV,_BNormalMap,_BBumpScale);
+        // float3 n1 = GetNormal(blendUV,_BlendNormalMap,_BlendNormalBumpScale);
+
+        // float3 finalWorldNormal;
+        // float3 resultNormal;
+        // float3 n2 =  normalize(rN*blendValue.r+gN *blendValue.g +bN*blendValue.b + mN*blendValue.a);
+        // resultNormal = (n1+n2)/2;
+        // o.normalWorld = resultNormal;
+
+        //------------------------- Mix All Normal Over -------------------------
         o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
         o.posWorld = i_posWorld;
 
@@ -418,7 +507,7 @@
         specularTerm *= any(specColor) ? 1.0 : 0.0;
 
         // 包含接受的投影色
-        float reciveShadowTerm = nl*(1-light.color);//1-step(.1,light.color.r+light.color.g+light.color.b);
+        float reciveShadowTerm = (1-light.color);//1-step(.1,light.color.r+light.color.g+light.color.b);
         float3 reciveShadowColor = reciveShadowTerm * _ReceiveShadowColor +1- reciveShadowTerm;
 
         half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
@@ -536,6 +625,8 @@
         #endif
 
         UNITY_TRANSFER_FOG(o,o.pos);
+
+        o.screenPos =ComputeScreenPos(o.pos);
         
         return o;
     }
