@@ -120,8 +120,8 @@
 
     // Blend Item Get Depth Texture
     Texture2D _CameraDepthTexture;
-    SamplerState sampler_CameraDepthTexture;
+    // SamplerState sampler_CameraDepthTexture;
     // UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture );
-    uniform float4 _CameraDepthTexture_TexelSize;
+    // uniform float4 _CameraDepthTexture_TexelSize;
     float _BlendValue;
 #endif

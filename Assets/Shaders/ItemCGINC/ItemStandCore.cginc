@@ -294,6 +294,8 @@
     // parallax transformed texcoord is used to sample occlusion
     inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld,float4 screenPos)
     {
+        // TurnOffViewDir
+        
         float4 offset = float4(0,0,0,0);
         offset = Parallax(offset,i_viewDirForParallax);
         //-------------------------Mix All Map Start-----------------------------------------

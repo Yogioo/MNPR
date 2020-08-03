@@ -27,7 +27,7 @@ namespace MNPR.MNPREditor
             AlbedoAlpha,
         }
 
-        private static class Styles
+        protected static class Styles
         {
             public static GUIContent uvSetLabel = new GUIContent("UV Set");
 
@@ -149,7 +149,7 @@ namespace MNPR.MNPREditor
             ShaderPropertiesGUI(material);
         }
 
-        public void ShaderPropertiesGUI(Material material)
+        public  virtual void ShaderPropertiesGUI(Material material)
         {
             // Use default labelWidth
             EditorGUIUtility.labelWidth = 0f;
@@ -257,7 +257,7 @@ namespace MNPR.MNPREditor
             MaterialChanged(material, m_WorkflowMode);
         }
 
-        void BlendModePopup()
+        protected virtual void BlendModePopup()
         {
             EditorGUI.showMixedValue = blendMode.hasMixedValue;
             var mode = (BlendMode)blendMode.floatValue;
@@ -273,7 +273,7 @@ namespace MNPR.MNPREditor
             EditorGUI.showMixedValue = false;
         }
 
-        void DoNormalArea()
+        protected  void DoNormalArea()
         {
             m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
             if (bumpScale.floatValue != 1 && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
@@ -287,7 +287,7 @@ namespace MNPR.MNPREditor
                 }
         }
 
-        void DoAlbedoArea(Material material)
+        protected void DoAlbedoArea(Material material)
         {
             m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor);
             if (((BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout))
@@ -296,7 +296,7 @@ namespace MNPR.MNPREditor
             }
         }
 
-        void DoEmissionArea(Material material)
+        protected void DoEmissionArea(Material material)
         {
             // Emission for GI?
             if (m_MaterialEditor.EmissionEnabledProperty())
@@ -316,7 +316,7 @@ namespace MNPR.MNPREditor
             }
         }
 
-        void DoSpecularMetallicArea()
+        protected void DoSpecularMetallicArea()
         {
             bool hasGlossMap = false;
             if (m_WorkflowMode == WorkflowMode.Specular)
@@ -427,7 +427,7 @@ namespace MNPR.MNPREditor
             }
         }
 
-        static void MaterialChanged(Material material, WorkflowMode workflowMode)
+        protected static void MaterialChanged(Material material, WorkflowMode workflowMode)
         {
             SetupMaterialWithBlendMode(material, (BlendMode)material.GetFloat("_Mode"));
 

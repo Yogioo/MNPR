@@ -20,7 +20,7 @@
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
 
-        _Parallax ("Height Scale", Range (0.005, 0.08)) = 0.02
+        _Parallax ("Height Scale", Range (0, 0.08)) = 0
         _ParallaxMap ("Height Map", 2D) = "black" {}
 
         _OcclusionStrength("Strength", Range(0.0, 1.0)) = 1.0
@@ -83,7 +83,7 @@
             #pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature _ _GLOSSYREFLECTIONS_OFF
-            #pragma shader_feature _PARALLAXMAP
+            // #pragma shader_feature _PARALLAXMAP
 
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -121,7 +121,7 @@
             #pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature ___ _DETAIL_MULX2
-            #pragma shader_feature _PARALLAXMAP
+            // #pragma shader_feature _PARALLAXMAP
 
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -151,7 +151,7 @@
 
             #pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature _METALLICGLOSSMAP
-            #pragma shader_feature _PARALLAXMAP
+            // #pragma shader_feature _PARALLAXMAP
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
             // Uncomment the following line to enable dithering LOD crossfade. Note: there are more in the file to uncomment for other passes.
@@ -186,7 +186,7 @@
             #pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature ___ _DETAIL_MULX2
-            #pragma shader_feature _PARALLAXMAP
+            // #pragma shader_feature _PARALLAXMAP
 
             #pragma multi_compile_prepassfinal
             #pragma multi_compile_instancing
@@ -252,7 +252,7 @@
             #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature _ _GLOSSYREFLECTIONS_OFF
             // SM2.0: NOT SUPPORTED shader_feature ___ _DETAIL_MULX2
-            // SM2.0: NOT SUPPORTED shader_feature _PARALLAXMAP
+            // // SM2.0: NOT SUPPORTED shader_feature _PARALLAXMAP
 
             #pragma skip_variants SHADOWS_SOFT DIRLIGHTMAP_COMBINED
 
@@ -285,7 +285,7 @@
             #pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
             #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature ___ _DETAIL_MULX2
-            // SM2.0: NOT SUPPORTED shader_feature _PARALLAXMAP
+            // // SM2.0: NOT SUPPORTED shader_feature _PARALLAXMAP
             #pragma skip_variants SHADOWS_SOFT
 
             #pragma multi_compile_fwdadd_fullshadows
@@ -348,6 +348,6 @@
 
 
     FallBack "VertexLit"
-    CustomEditor "MNPR.MNPREditor.GroundStandardShaderGUI"
+    CustomEditor "MNPR.MNPREditor.ItemStandardShaderGUI"
 }
 

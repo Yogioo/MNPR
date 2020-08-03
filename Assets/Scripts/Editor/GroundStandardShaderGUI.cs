@@ -13,21 +13,23 @@ namespace MNPR.MNPREditor
         protected MaterialProperty m_CullMode;
         protected MaterialProperty m_ReceiveShadowColor;
 
-
         private static class CustomStyles
         {
             public static GUIContent CullMode = new GUIContent("Cull Mode");
-            public static GUIContent ReceiveShadowColor = new GUIContent("Receive Shadow Color"); 
+            public static GUIContent ReceiveShadowColor = new GUIContent("Receive Shadow Color");
         }
 
         #endregion 
 
+        
         public override void FindPropertiesEx(MaterialProperty[] props)
         {
             base.FindPropertiesEx(props);
 
             m_CullMode = FindProperty("_CullMode", props);
             m_ReceiveShadowColor = FindProperty("_ReceiveShadowColor", props);
+
+           
         }
         public override void DoExtention(Material mat)
         {
